@@ -15,6 +15,10 @@ var  longitudeList = getColumn("worldcities_clean", "lng");
 var latitudeList = getColumn("worldcities_clean", "lat");
     var filteredLatitudeList = [];
 
+var rowCounter;
+
+var filteredCitiesPlaceholder;
+
 onEvent("nobelPrizeButton", "click", function () {
     setScreen("screen2");
 
@@ -54,7 +58,7 @@ var userLocation = getText("cityOfBirthInput");
     
 //creates filtered latitude and longitude lists
 for (var a=0;a<filteredCitiesList;a++)
-    var filteredCitiesPlaceholder = filteredCitiesList[a];
+    filteredCitiesPlaceholder = filteredCitiesList[a];
     var cityPlaceholder = citiesList[a];
     var latPlaceholder = latitudeList[a];
     var lngPlaceholder = longitudeList[a];
@@ -81,7 +85,6 @@ for (var i=0;i<citiesList.length;i++) {
 
     var minDistance = distanceMeasurer(userCoordinates[0], userCoordinates[1], startingCityCoordinates[0], startingCityCoordinates[1]);
 
-    var rowCounter;
   
         if (minDistance>distance) {
             minDistance = distance;
