@@ -4,20 +4,15 @@ var lastNameList = getColumn("Nobel Prize Winners 1901-2016", "Last name");
 
 var categoryList = getColumn("Nobel Prize Winners 1901-2016", "Category");
 
-var nobelCitiesList = getColumn("Nobel Prize Winners 1901-2016", "City of birth");
-    var filteredCitiesList = [];
-var citiesList = getColumn("City Coordinates", "city");
+var countriesList = getColumn("Nobel Prize Winners 1901-2016", "Country of birth");
 
-var userCoordinates = [];
+var filteredCategoriesList = [];
 
-var  longitudeList = getColumn("City Coordinates", "lng");
-    var filteredLongitudeList = [];
-var latitudeList = getColumn("City Coordinates", "lat");
-    var filteredLatitudeList = [];
+var filteredCountriesList = [];
 
-var rowCounter;
+var counter;
 
-var filteredCitiesPlaceholder;
+var counterList = [];
 
 onEvent("nobelprizeButton", "click", function () {
     setScreen("screen2");
@@ -32,89 +27,44 @@ setScreen("screen4");
 var userName = getText("nameInput");
 
 setText("calculatingTextBox", "Calculating...");
-//creates filtered cities list
+//filters the countries list by only recording countries that have won a nobel prize in a subject that the user has chosen
 var userCategory = getText("interestdropDown");
     for (var t=0;t<categoryList.length;t++) {
-        var citiesPlaceholder = nobelCitiesList[t];
         var categoryPlaceholder = categoryList[t];
+        var countryPlaceholder = countriesList[t];
 
             if (categoryPlaceholder == userCategory) {
-                appendItem(filteredCitiesList, citiesPlaceholder);
-                
+                appendItem(filteredCategoriesList, categoryPlaceholder);
+                appendItem(filteredCountriesList, countryPlaceholder);
+                appendItem(counterList, t);
             }
     }
-
-//creates the user's coordinates
-var userLocation = getText("cityOfBirthInput");
-    for (var j=0;j<citiesList.length;j++) {
-        cityPlaceholder = citiesList[j];
-        lngPlaceholder = longitudeList[j];
-        latPlaceholder = latitudeList[j];
-            if (userLocation == cityPlaceholder) {
-                appendItem(userCoordinates, latPlaceholder);
-                appendItem(userCoordinates, lngPlaceholder);
-                break;
-
-
-            }
-
-    }
-setText("triangulatingTextBox", "Triangulating...");
-//creates filtered latitude and longitude lists
-for (var a=0;a<filteredCitiesList.length;a++) {
-    filteredCitiesPlaceholder = filteredCitiesList[a];
-    for (var c=0;c<citiesList.length;c++) {
-      var cityPlaceholder = citiesList[c];
-    var latPlaceholder = latitudeList[c];
-    var lngPlaceholder = longitudeList[c];
-    if (cityPlaceholder == filteredCitiesPlaceholder) {
-        appendItem(filteredLatitudeList, latPlaceholder);
-        appendItem(filteredLongitudeList, lngPlaceholder);
-        
-    }
-
-    }
+    
+    
+for (var j=0;j<countriesList.length;j++) {
+  
 }
-setText("finishTextBox", "Finishing...");
-//need to use filtered latitude and longlitude lists since we need to account for the category that the user has selected
-for (var i=0;i<citiesList.length;i++) {
-    var latitude = filteredLatitudeList[i];
-
-    var startingLatitude = filteredLatitudeList[0];
-
-    var longitude = filteredLongitudeList[i];
-
-    var startingLongitude = filteredLongitudeList[0];
-
-    var cityCoordinates = coordinateConverter(latitude, longitude);
-
-    var startingCityCoordinates = coordinateConverter(startingLatitude, startingLongitude);
-
-    var distance = distanceMeasurer(userCoordinates[0], userCoordinates[1], cityCoordinates[0], cityCoordinates[1]);
-
-    var minDistance = distanceMeasurer(userCoordinates[0], userCoordinates[1], startingCityCoordinates[0], startingCityCoordinates[1]);
-
-        if (minDistance>distance) {
-            minDistance = distance;
-             rowCounter = i;
+  //uses filtered countries list to find if the user's country is in the list
+  var userCountry = getText("countryOfBirthInput");
+    for (var i=0;i<countriesList.length;i++) {
+      var filtCountryPlaceholder = filteredCountriesList[i];
+      var counterPlaceholder = counterList[i];
+        if (filtCountryPlaceholder == userCountry) {
+          counter = counterPlaceholder;
+          break;
+          //if the user is not in the filtered countries list then it will pump out a random nobel prize winner
+        }else if (filtCountryPlaceholder == undefined) {
+          var random = randomNumber(0, counterList.length-1);
+          counter = counterList[random];
         }
-}
-setScreen("screen3");
-
-var nobelPrizeWinnerName = firstNameList[rowCounter]+ " "+ lastNameList[rowCounter];
-
-setText("outputText", "Congrats! "+ userName+ " you are most similar to " + nobelPrizeWinnerName);
-
+    }
+    
+  winner();
+  
+  setScreen("screen3");
+  
+  //takes all of the important information to create the nobel prize winner that matches the user
+  function winner() {
+    setText("outputText", "Congrats " + userName +" you are most similar to "+firstNameList[counter]+" "+lastNameList[counter]);
+  }
 });
-
-//converts the coordinates into pi radians
-function coordinateConverter(lat, lng) {
-    lat = lat*(Math.PI/180);
-    lng = lng*(Math.PI/180);
-    return [lat, lng];
-}
-//measures the distance between the two inputed latitude and two inputed longitudes
-function distanceMeasurer (lat1, lng1, lat2, lng2) {
-    var d = 3963.0 * Math.acos((Math.sin(lat1) * Math.sin(lat2)) + Math.cos(lat1) * Math.cos(lat2) * Math.cos(lng2-lng1));
-    return d;
-}
