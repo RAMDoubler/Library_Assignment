@@ -201,6 +201,7 @@ class CentralLimitTheorem(Scene):
 
         for s in range(15):
             # THIS IS CALLING A RANDOM SAMPLE OF NUMBERS TO SELECT FROM
+            # MAX THIS IS WHERE YOU WILL NEED TO FIGURE OUT HWO TO ARTIFICALLY INCREASE THE POPULATION IN A SMOOTH FASHION, I'M THINKING MAYBE A FOR LOOP WOULD BE NICE
             a = random.sample(range(0, 50), k=sample_count)
 
             # THIS IS A GROUP FOR THE RESULTS BASED ON THE DATA
