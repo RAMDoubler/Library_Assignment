@@ -11,7 +11,7 @@ class RandomNumbers(Scene):
     def construct(self):
 
         numbers = VGroup()
-        for x in range(28):
+        for x in range(56):
             num = DecimalNumber()
             numbers.add(num)
 
@@ -19,17 +19,17 @@ class RandomNumbers(Scene):
             for num in numbers:
                 value = random.uniform(0, 1)
                 num.set_value(value)
-                if value > 0.1:
+                if value > 0.5:
                     num.set_color(GREEN)
                 else:
                     num.set_color(RED)
 
         randomize_numbers(numbers)
 
-        numbers.set(width=0.38)
-        numbers.arrange(RIGHT, buff=0.1)
+        numbers.set(width=0.1)
+        numbers.arrange_in_grid(buff=(.2,.2))
         numbers.to_edge(UR)
-
+        
         def get_results(numbers):
             results = VGroup()
             for num in numbers:
@@ -37,13 +37,13 @@ class RandomNumbers(Scene):
                     result = (
                         SVGMobject(f"{HOME2}\\green_checkmark.svg")
                         .set_color(GREEN_C)
-                        .set(width=0.3)
+                        .set(width=0.2)
                     )
                 else:
                     result = (
                         SVGMobject(f"{HOME2}\\red_minus.svg")
                         .set_color(RED_C)
-                        .set(width=0.3)
+                        .set(width=0.2)
                     )
 
                 result.next_to(num, DOWN, buff=0.2)
@@ -71,12 +71,12 @@ class RandomNumbers(Scene):
 
 
 def get_data_1(self):
-    w = 0.2
+    w = 0.1
     t_row1 = (
         VGroup(
             *[
-                SVGMobject(f"{HOME2}\\green_tick.svg").set(width=w).set_color(GREEN)
-                for i in range(10)
+                SVGMobject(f"{HOME2}\\green_checkmark.svg").set(width=w).set_color(GREEN)
+                for i in range(15)
             ]
         )
         .arrange(RIGHT, buff=0.2)
@@ -85,28 +85,48 @@ def get_data_1(self):
     t_row2 = (
         VGroup(
             *[
-                SVGMobject(f"{HOME2}\\green_tick.svg").set(width=w).set_color(GREEN)
-                for i in range(10)
+                SVGMobject(f"{HOME2}\\green_checkmark.svg").set(width=w).set_color(GREEN)
+                for i in range(15)
             ]
         )
         .arrange(RIGHT, buff=0.2)
         .next_to(t_row1, DOWN, buff=0.25)
     )
-    f_row1 = (
+    t_row3 = (
         VGroup(
             *[
-                SVGMobject(f"{HOME2}\\cross.svg").set(width=w).set_color(RED)
-                for i in range(10)
+                SVGMobject(f"{HOME2}\\green_checkmark.svg").set(width=w).set_color(GREEN)
+                for i in range(15)
             ]
         )
         .arrange(RIGHT, buff=0.2)
         .next_to(t_row2, DOWN, buff=0.25)
     )
+    t_row4 = (
+        VGroup(
+            *[
+                SVGMobject(f"{HOME2}\\green_checkmark.svg").set(width=w).set_color(GREEN)
+                for i in range(15)
+            ]
+        )
+        .arrange(RIGHT, buff=0.2)
+        .next_to(t_row3, DOWN, buff=0.25)
+    )
+    f_row1 = (
+        VGroup(
+            *[
+                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
+                for i in range(15)
+            ]
+        )
+        .arrange(RIGHT, buff=0.2)
+        .next_to(t_row4, DOWN, buff=0.25)
+    )
     f_row2 = (
         VGroup(
             *[
-                SVGMobject(f"{HOME2}\\cross.svg").set(width=w).set_color(RED)
-                for i in range(10)
+                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
+                for i in range(15)
             ]
         )
         .arrange(RIGHT, buff=0.2)
@@ -115,15 +135,47 @@ def get_data_1(self):
     f_row3 = (
         VGroup(
             *[
-                SVGMobject(f"{HOME2}\\cross.svg").set(width=w).set_color(RED)
-                for i in range(10)
+                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
+                for i in range(15)
             ]
         )
         .arrange(RIGHT, buff=0.2)
         .next_to(f_row2, DOWN, buff=0.25)
     )
-
-    result = VGroup(*t_row1, *t_row2, *f_row1, *f_row2, *f_row3)
+    f_row4 = (
+        VGroup(
+            *[
+                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
+                for i in range(15)
+            ]
+        )
+        .arrange(RIGHT, buff=0.2)
+        .next_to(f_row3, DOWN, buff=0.25)
+        
+    )
+    f_row5 = (
+        VGroup(
+            *[
+                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
+                for i in range(15)
+            ]
+        )
+        .arrange(RIGHT, buff=0.2)
+        .next_to(f_row4, DOWN, buff=0.25)
+        
+    )
+    f_row6 = (
+        VGroup(
+            *[
+                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
+                for i in range(15)
+            ]
+        )
+        .arrange(RIGHT, buff=0.2)
+        .next_to(f_row5, DOWN, buff=0.25)
+        
+    )
+    result = VGroup(*t_row1, *t_row2, *t_row3, *t_row4, *f_row1, *f_row2, *f_row3, *f_row4, *f_row5, *f_row6)
 
     return result
 
@@ -133,7 +185,7 @@ class CentralLimitTheorem(Scene):
 
         data = get_data_1(self)
         axes = (
-            Axes(x_range=[0, 1.2, 0.1], y_range=[0, 2.5], x_length=10, y_length=4)
+            Axes(x_range=[0, 1.6, 0.1], y_range=[0, 5], x_length=10, y_length=4)
             .to_edge(DL)
             .shift(UP * 0.2)
         )
@@ -141,9 +193,9 @@ class CentralLimitTheorem(Scene):
         labels = axes.get_axis_labels(x_label="\\hat{p}", y_label="")
 
         x_axis_nums = VGroup()
-        for i in range(11):
+        for i in range(15):
             num = (
-                MathTex("\\frac{%3d}{10}" % i)
+                MathTex("\\frac{%3d}{14}" % i)
                 .scale(0.6)
                 .next_to(axes.x_axis.n2p(i / 10 + 0.05), DOWN, buff=0.1)
             )
@@ -174,7 +226,7 @@ class CentralLimitTheorem(Scene):
         self.wait()
 
         data = get_data_1(self)
-        sample_count = 10
+        sample_count = 14
         possible_outcomes = sample_count + 1
 
         counter_num = 0
@@ -199,9 +251,9 @@ class CentralLimitTheorem(Scene):
 
         sums = [0] * possible_outcomes  # This creates an array for possible totals /10
 
-        for s in range(15):
+        for s in range(20):
             # THIS IS CALLING A RANDOM SAMPLE OF NUMBERS TO SELECT FROM
-            a = random.sample(range(0, 50), k=sample_count)
+            a = random.sample(range(0, 150), k=sample_count)
 
             # THIS IS A GROUP FOR THE RESULTS BASED ON THE DATA
             sample_results = VGroup()
@@ -222,7 +274,7 @@ class CentralLimitTheorem(Scene):
 
             # THIS ASSIGNS A VALUE FOR HOW MANY CORRECT WERE SELECTED FROM DATA
             for i, value in enumerate(a):
-                if value < 20:
+                if value < 60:
                     a[i] = 1
                 else:
                     a[i] = 0
@@ -253,7 +305,7 @@ class CentralLimitTheorem(Scene):
 
             self.play(
                 stack_in_axes.animate.next_to(x_axis_nums[tot], UP, buff=0)
-                .set(width=0.77)
+                .set(width=0.65)
                 .shift(UP * sums[tot]),
                 FadeOut(prop),
             )
@@ -264,7 +316,7 @@ class CentralLimitTheorem(Scene):
 
         for s in range(85):
             # THIS IS CALLING A RANDOM SAMPLE OF NUMBERS TO SELECT FROM
-            a = random.sample(range(0, 50), k=sample_count)
+            a = random.sample(range(0, 150), k=sample_count)
 
             # THIS IS A GROUP FOR THE RESULTS BASED ON THE DATA
             sample_results = VGroup()
@@ -286,7 +338,7 @@ class CentralLimitTheorem(Scene):
 
             # THIS ASSIGNS A VALUE FOR HOW MANY CORRECT WERE SELECTED FROM DATA
             for i, value in enumerate(a):
-                if value < 20:
+                if value < 60:
                     a[i] = 1
                 else:
                     a[i] = 0
