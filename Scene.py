@@ -2,7 +2,7 @@ from manim import *
 import random
 
 HOME = "C:\manim\Manim_7_July\Projects\\assets\Images"
-HOME2 = "C:\manim\Manim_7_July\Projects\\assets\SVG_Images"
+HOME2 = "C:\\Users\\Alex\\Downloads\\SVG_Images"
 
 # This is for SVG Files to be imported. It is the directory from my PC
 
@@ -35,13 +35,13 @@ class RandomNumbers(Scene):
             for num in numbers:
                 if num.get_value() > 0.1:
                     result = (
-                        SVGMobject(f"{HOME2}\\green_tick.svg")
+                        SVGMobject(f"{HOME2}\\green_checkmark.svg")
                         .set_color(GREEN_C)
                         .set(width=0.3)
                     )
                 else:
                     result = (
-                        SVGMobject(f"{HOME2}\\cross.svg")
+                        SVGMobject(f"{HOME2}\\red_minus.svg")
                         .set_color(RED_C)
                         .set(width=0.3)
                     )
@@ -201,7 +201,6 @@ class CentralLimitTheorem(Scene):
 
         for s in range(15):
             # THIS IS CALLING A RANDOM SAMPLE OF NUMBERS TO SELECT FROM
-            # MAX THIS IS WHERE YOU WILL NEED TO FIGURE OUT HWO TO ARTIFICALLY INCREASE THE POPULATION IN A SMOOTH FASHION, I'M THINKING MAYBE A FOR LOOP WOULD BE NICE
             a = random.sample(range(0, 50), k=sample_count)
 
             # THIS IS A GROUP FOR THE RESULTS BASED ON THE DATA
