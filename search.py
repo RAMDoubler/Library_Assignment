@@ -1,375 +1,170 @@
-from manim import *
+from board import *
+import numpy as np
 import random
+from const import *
+from square import *
+from move import *
+from game import *
+from AI import *
+import time
 
-HOME = "C:\manim\Manim_7_July\Projects\\assets\Images"
-HOME2 = "C:\\Users\\Alex\\Downloads\\SVG_Images"
+class Node:
 
-# This is for SVG Files to be imported. It is the directory from my PC
+    def __init__(self, state):
+        if state == None:
+            raise ValueError("There is no state inputted")
+        # keeps track of the state of the game
+        self.state = state
+        # keeps track of a node's children in a 2-D array
+        self.children = []
+        # keeps track of the node's parent
+        self.parent = None
+        # keeps track of the mean value of the node
+        self.mean = 0
+        # keeps track of how many times the node has been visited
+        self.visits = 0
+        # keeps track of how many times a node's parent has been visited
+        self.parent_vistits = 0
+    
+    # this function just returns a randomly chosen element from the children attribute
+    def pick_random(self):
+        child = random.choice(self.children)
+        return child
 
+    # checks to see whether we have reached the maximum depth, or in other words, the game is over
+    def non_terminal(self):
+        return True if self.children == [] else False
 
-class RandomNumbers(Scene):
-    def construct(self):
+    # calculates all of the children given a node
+    def child(self, node, team_color):
+        if node == None:
+            raise ValueError("There is no node inputted")
+        # assigns board object to board variable
+        board = node.state
+        # iterates through rows of board
+        for row in range(ROWS):
+            # iterates through the columns of board
+            for col in range(COLS):
+                # assigns variable to a square object
+                initial = board.squares[row][col]
+                # checks to see whether the variable has the desired piece
+                if (initial.has_piece() and initial.has_team_piece(team_color)):
+                    piece = initial.piece
+                    # calculates all possible moves given current state of the board
+                    board.calc_moves(piece, row, col, bool=True)
+                    # iterates through move list and appends all possible states of the next board into the children attribute
+                    for move in piece.moves:
+                        final = Square(move.final.row, move.final.col)
+                        true_move = Move(initial, final)
+                        board.move(piece, true_move)
+                        self.children.append(board.squares)
 
-        numbers = VGroup()
-        for x in range(56):
-            num = DecimalNumber()
-            numbers.add(num)
+    # calculates the value of the board given the material on it
+    def value(self, node):
+        if node == None:
+            raise ValueError("There is no node inputted")
+        value = 0
+        for row in range(ROWS):
+            for col in range(COLS):
+                # excludes king because it has a value of inf
+                if (node[row][col].has_piece() and not (isinstance( node[row][col].piece, King))) :
+                    piece = node[row][col].piece
+                    value = piece.value + value
+        return value
 
-        def randomize_numbers(numbers):
-            for num in numbers:
-                value = random.uniform(0, 1)
-                num.set_value(value)
-                if value > 0.5:
-                    num.set_color(GREEN)
-                else:
-                    num.set_color(RED)
-
-        randomize_numbers(numbers)
-
-        numbers.set(width=0.1)
-        numbers.arrange_in_grid(buff=(.2,.2))
-        numbers.to_edge(UR)
+# this is the class that will be handling most of the searching
+class Tree:
+    def __init__(self, root):
+        self.root = root
+        # keeps track of which leaves belong to which team
+        self.team_leaves = []
+        self.enemy_leaves = []
+        self.game = Game()
         
-        def get_results(numbers):
-            results = VGroup()
-            for num in numbers:
-                if num.get_value() > 0.1:
-                    result = (
-                        SVGMobject(f"{HOME2}\\green_checkmark.svg")
-                        .set_color(GREEN_C)
-                        .set(width=0.2)
-                    )
-                else:
-                    result = (
-                        SVGMobject(f"{HOME2}\\red_minus.svg")
-                        .set_color(RED_C)
-                        .set(width=0.2)
-                    )
+        # calculate's the upper confidence bound based on a pre-determined formula
+    def UCB(self, mean_node_value, number_of_vists_to_node, number_of_visits_to_parent):
+        #i need to figure out the best value for the constant
+        c = 2
+        ucb = mean_node_value + c * np.sqrt((np.log(number_of_visits_to_parent)/number_of_vists_to_node))
 
-                result.next_to(num, DOWN, buff=0.2)
-                results.add(result)
-            return results
+        # the selection function 
+    def selection(self, root, team_color):
+        if root == None:
+            raise ValueError("There is no root inputted")
+        root.child(root.state, team_color)
+        max_ucb = -np.inf
+        select_child = None
+        for j in root.children:
+            root.value = self.UCB(j.mean, j.visits, j.parent_visits)
+            if(root.value>max_ucb):
+                max_ucb = root
+                select_child = j
+        return select_child
 
-        for k in range(10):
-            self.play(UpdateFromFunc(numbers, randomize_numbers))
-            self.wait()
-            result = get_results(numbers)
-            self.play(Write(result))
-            self.wait()
+        # this function will continue to iterate through the passed node's children until a leaf node is reached (a leaf node is a node with no children)
+    def expansion(self, node, team_color):
+        if node == None:
+            raise ValueError("There is no node inputted")
+        if (node.non_terminal() == False):
+            node.child(node.state, team_color)
+            max_ucb = -np.inf
+            select_child = None
+            # iterates through passed node's children
+            for i in node.children:
+                curr_value = self.UCB(i.mean, i.visits, i.parent_visits)
+                if(curr_value>max_ucb):
+                    max_ucb = curr_value
+                    select_child = i
+                    # checks to see whether the node has no children
+                    if (select_child.non_terminal()):
+                        return select_child
+            
+    # the roll_out function deploys the roll_out_policy and returns the result of the policy
+    def roll_out(self, node):
+        if node == None:
+            raise ValueError("There is no node inputted")
+        while self.non_terminal(node):
+            node = self.roll_out_policy(node)
+        return self.result(node)
 
-            k = 0
-            for num in numbers:
-                if num.get_value() > 0.1:
-                    k += 1
-            total = k
+    # picks a random child from the passed node's children
+    def roll_out_policy(self, node):
+        if node == None:
+            raise ValueError("There is no node inputted")
+        return self.pick_random(node.children)
 
-            box = SurroundingRectangle(result)
-            self.play(Create(box))
-            self.play(FadeOut(box), FadeOut(result))
+    # passes a node and an update to the value of the parents of the end game node
+    def backprop(self, node, update):
+        if ((node == None) or update not in (-1, 0, 1)):
+            raise ValueError("There is no node or update inputted, and when I say 'or' I mean in the disjunctive sense not the exclusive disjuctive sense :)")
+        # iterates through of all of the node's parents until all of this values are accurate (note that this value is different from the board value, when I say value here I am referring to the mean attribute)
+        while(node.parent != None):
+            node.mean += update
+            node = node.parent
+        return node
 
-        self.wait()
+    # this is the function that puts all of the function above together
+    def search(self, root):
+        if root == None:
+            raise ValueError("There is no root inputted")
+        # produces a node with the highest upper confidence bound
+        node = self.selection(root, AI.color)
+        # produces an unexplored node/leaf
+        leaf = self.expansion(node, AI.color)
+        # outputsthe result of the leaf node
+        result = self.roll_out(leaf)
+        # updates all of the values of the parent nodes
+        choice = self.backprop(leaf, result)
+        return choice
 
-
-def get_data_1(self):
-    w = 0.1
-    t_row1 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\green_checkmark.svg").set(width=w).set_color(GREEN)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .to_edge(UL, buff=0.25)
-    )
-    t_row2 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\green_checkmark.svg").set(width=w).set_color(GREEN)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(t_row1, DOWN, buff=0.25)
-    )
-    t_row3 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\green_checkmark.svg").set(width=w).set_color(GREEN)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(t_row2, DOWN, buff=0.25)
-    )
-    t_row4 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\green_checkmark.svg").set(width=w).set_color(GREEN)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(t_row3, DOWN, buff=0.25)
-    )
-    f_row1 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(t_row4, DOWN, buff=0.25)
-    )
-    f_row2 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(f_row1, DOWN, buff=0.25)
-    )
-    f_row3 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(f_row2, DOWN, buff=0.25)
-    )
-    f_row4 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(f_row3, DOWN, buff=0.25)
-        
-    )
-    f_row5 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(f_row4, DOWN, buff=0.25)
-        
-    )
-    f_row6 = (
-        VGroup(
-            *[
-                SVGMobject(f"{HOME2}\\red_minus.svg").set(width=w).set_color(RED)
-                for i in range(15)
-            ]
-        )
-        .arrange(RIGHT, buff=0.2)
-        .next_to(f_row5, DOWN, buff=0.25)
-        
-    )
-    result = VGroup(*t_row1, *t_row2, *t_row3, *t_row4, *f_row1, *f_row2, *f_row3, *f_row4, *f_row5, *f_row6)
-
-    return result
-
-
-class CentralLimitTheorem(Scene):
-    def construct(self):
-
-        data = get_data_1(self)
-        axes = (
-            Axes(x_range=[0, 1.6, 0.1], y_range=[0, 5], x_length=10, y_length=4)
-            .to_edge(DL)
-            .shift(UP * 0.2)
-        )
-
-        labels = axes.get_axis_labels(x_label="\\hat{p}", y_label="")
-
-        x_axis_nums = VGroup()
-        for i in range(15):
-            num = (
-                MathTex("\\frac{%3d}{14}" % i)
-                .scale(0.6)
-                .next_to(axes.x_axis.n2p(i / 10 + 0.05), DOWN, buff=0.1)
-            )
-            x_axis_nums.add(num)
-
-        sample_counter = Tex("Total samples: ").scale(0.6).to_edge(UR).shift(LEFT * 0.6)
-        total_counter = (
-            Tex("Sum of Averages: ")
-            .scale(0.6)
-            .next_to(sample_counter, DOWN, aligned_edge=LEFT, buff=0.4)
-        )
-        average_counter = (
-            MathTex("Average \\ \\hat{p}:  ")
-            .scale(0.6)
-            .next_to(total_counter, DOWN, aligned_edge=LEFT, buff=0.4)
-        )
-
-        self.play(
-            LaggedStart(
-                Create(data),
-                Write(VGroup(sample_counter, total_counter, average_counter)),
-                Create(axes),
-                Write(x_axis_nums),
-                run_time=4,
-                lag_ratio=1,
-            )
-        )
-        self.wait()
-
-        data = get_data_1(self)
-        sample_count = 14
-        possible_outcomes = sample_count + 1
-
-        counter_num = 0
-        counter_number = (
-            Integer(counter_num).scale(0.5).next_to(sample_counter, RIGHT, buff=0.2)
-        )
-        counter_number.add_updater(lambda m: m.set_value(counter_num))
-
-        total_sum = 0
-        total_number = (
-            DecimalNumber(total_sum).scale(0.5).next_to(total_counter, RIGHT, buff=0.2)
-        )
-        total_number.add_updater(lambda m: m.set_value(total_sum))
-
-        average = 0
-        average_num = (
-            DecimalNumber(average).scale(0.5).next_to(average_counter, RIGHT, buff=0.2)
-        )
-        average_num.add_updater(lambda m: m.set_value(average))
-
-        self.add(counter_number, total_number, average_num)
-
-        sums = [0] * possible_outcomes  # This creates an array for possible totals /10
-
-        for s in range(20):
-            # THIS IS CALLING A RANDOM SAMPLE OF NUMBERS TO SELECT FROM
-            a = random.sample(range(0, 150), k=sample_count)
-
-            # THIS IS A GROUP FOR THE RESULTS BASED ON THE DATA
-            sample_results = VGroup()
-            boxes = VGroup()
-            for i, res in enumerate(a):
-                res = data[a[i]]
-                box = SurroundingRectangle(res)
-                sample_results.add(res)
-                boxes.add(box)
-
-            moved_result = sample_results.copy()
-
-            self.play(Create(boxes))
-            self.play(
-                moved_result.animate.arrange(RIGHT * 0.3, buff=0).to_edge(UP),
-                FadeOut(boxes),
-            )
-
-            # THIS ASSIGNS A VALUE FOR HOW MANY CORRECT WERE SELECTED FROM DATA
-            for i, value in enumerate(a):
-                if value < 60:
-                    a[i] = 1
-                else:
-                    a[i] = 0
-
-            prop = DecimalNumber(num_decimal_places=1)
-            tot = sum(a)
-            prop.set_value(tot / sample_count).set(height=0.2)
-            prop.next_to(moved_result, RIGHT, buff=0.3)
-
-            axes_box = SurroundingRectangle(
-                moved_result,
-                stroke_color=WHITE,
-                stroke_width=0.2,
-                fill_color=BLUE,
-                fill_opacity=0.8,
-                buff=0.1,
-            )
-            stack_in_axes = VGroup(axes_box, moved_result)
-
-            self.play(DrawBorderThenFill(axes_box))
-            self.play(Write(prop))
-
-            counter_num += 1
-
-            total_sum += tot / sample_count
-
-            average = (total_sum) / (counter_num)
-
-            self.play(
-                stack_in_axes.animate.next_to(x_axis_nums[tot], UP, buff=0)
-                .set(width=0.65)
-                .shift(UP * sums[tot]),
-                FadeOut(prop),
-            )
-
-            sums[tot] += stack_in_axes.get_height()
-
-        self.wait()
-
-        for s in range(85):
-            # THIS IS CALLING A RANDOM SAMPLE OF NUMBERS TO SELECT FROM
-            a = random.sample(range(0, 150), k=sample_count)
-
-            # THIS IS A GROUP FOR THE RESULTS BASED ON THE DATA
-            sample_results = VGroup()
-            boxes = VGroup()
-            for i, res in enumerate(a):
-                res = data[a[i]]
-                box = SurroundingRectangle(res)
-                sample_results.add(res)
-                boxes.add(box)
-
-            moved_result = sample_results.copy()
-
-            self.play(Create(boxes), run_time=0.1)
-            self.play(
-                moved_result.animate.arrange(RIGHT * 0.3, buff=0).to_edge(UP),
-                FadeOut(boxes),
-                run_time=0.1,
-            )
-
-            # THIS ASSIGNS A VALUE FOR HOW MANY CORRECT WERE SELECTED FROM DATA
-            for i, value in enumerate(a):
-                if value < 60:
-                    a[i] = 1
-                else:
-                    a[i] = 0
-
-            prop = DecimalNumber(num_decimal_places=1)
-            tot = sum(a)
-            prop.set_value(tot / sample_count).set(height=0.2)
-            prop.next_to(moved_result, RIGHT, buff=0.3)
-
-            axes_box = SurroundingRectangle(
-                moved_result,
-                stroke_color=WHITE,
-                stroke_width=0.2,
-                fill_color=BLUE,
-                fill_opacity=0.8,
-                buff=0.1,
-            )
-            stack_in_axes = VGroup(axes_box, moved_result)
-
-            self.add(axes_box, prop)
-            counter_num += 1
-            total_sum += tot / sample_count
-            average = (total_sum) / (counter_num)
-
-            self.play(
-                stack_in_axes.animate.next_to(x_axis_nums[tot], UP, buff=0)
-                .set(width=0.77)
-                .shift(UP * sums[tot]),
-                FadeOut(prop),
-                run_time=0.3,
-            )
-
-            sums[tot] += stack_in_axes.get_height()
-        self.wait()
+    # this function returns a value depending on the state of the node passed
+    def result(self, node):
+        if node == None:
+            raise ValueError("There is no node inputted")
+        if(self.game.game_over(node)):
+            if (self.game.next_player == self.game.winner):
+                return 1
+            if ((self.game.next_player != self.game.winner) and (self.game.player != self.game.winner)):
+                return 0
+            if (self.game.next_player != self.game.winner):
+                return -1
